@@ -4,7 +4,7 @@
 обнаруженного на интерактивных панелях с операционной системой МОС
 (ОС «Московской электронной школы») в школах Москвы.
 
-**Статья:** [`docs/index.html`](docs/index.html) · PDF: [`docs/mesh-agent-lesson-log.pdf`](docs/mesh-agent-lesson-log.pdf)
+**Статья:** [`docs/index.html`](docs/index.html) 
 
 ## Содержимое
 
