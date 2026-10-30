@@ -1,0 +1,39 @@
+{
+  "backend": {
+    "base-url": "http://82.148.29.56:18080/cloudcom/listener-server/api/v1/agent",
+    "sync-interval-seconds": 30,
+    "timeout-seconds": 30
+  },
+  "samba": {
+    "ip-address": "MEDIASTG",
+    "port": 445,
+    "share-name": "in"
+  },
+  "recording": {
+    "root-dir": "/var/lib/cloudcom/agent/jobs",
+    "temp-dir": "/var/lib/cloudcom/agent/tmp",
+    "audio-format": "OPUS",
+    "channels": 1,
+    "sample-rate": 44100,
+    "sample-format": 2,
+    "min-free-bytes": 536870912,
+    "grace-seconds": 5,
+    "keep-success-hours": 24
+  },
+  "upload": {
+    "target": "NETWORK_SHARE",
+    "retry": {
+      "initial-delay-seconds": 30,
+      "max-delay-seconds": 900
+    }
+  },
+  "logging": {
+    "level": "INFO"
+  },
+  "sample_format": 2,
+  "channels": 1,
+  "sample_rate": 44100,
+  "record_duration_sec": 10,
+  "server_status_duration_sec": 60,
+  "output_file_format": "/var/lib/cloudcom/agent/jobs/output-%d.opus"
+}

@@ -1,0 +1,20 @@
+[Unit]
+Description=CloudCom lesson delivery agent
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mesh-agent
+Group=mesh-agent
+SupplementaryGroups=audio
+WorkingDirectory=/var/lib/cloudcom/agent
+ExecStart=/usr/bin/mesh-agent-lesson-log
+Restart=always
+RestartSec=10
+StateDirectory=cloudcom/agent
+RuntimeDirectory=cloudcom-agent
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

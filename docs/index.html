@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="index, follow">
+<title>mesh-agent-lesson-log: агент тайной звукозаписи в школах Москвы</title>
+<style>
+  :root {
+    --bg: #fdfdfb;
+    --fg: #1a1a1a;
+    --muted: #555;
+    --border: #d8d8d0;
+    --code-bg: #f4f4ee;
+    --accent: #8b1a1a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto;
+    max-width: 52rem;
+    padding: 2rem 1.2rem 4rem;
+    font: 17px/1.65 Georgia, "Times New Roman", serif;
+    color: var(--fg);
+    background: var(--bg);
+  }
+  h1 { font-size: 1.7rem; line-height: 1.3; margin-bottom: .3rem; }
+  h2 { font-size: 1.3rem; margin-top: 2.4rem; border-bottom: 1px solid var(--border); padding-bottom: .2rem; }
+  h3 { font-size: 1.05rem; margin-top: 1.6rem; }
+  .subtitle { color: var(--muted); margin-top: 0; }
+  code, pre { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .82em; }
+  code { background: var(--code-bg); padding: .1em .35em; border-radius: 3px; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); padding: .9rem 1rem; overflow-x: auto; line-height: 1.45; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92em; margin: 1rem 0; }
+  th, td { border: 1px solid var(--border); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); }
+  figure { margin: 1.4rem 0; }
+  figure img { max-width: 100%; border: 1px solid var(--border); display: block; }
+  figcaption { font-size: .85em; color: var(--muted); margin-top: .4rem; }
+  .note { border-left: 4px solid var(--accent); background: #faf6f2; padding: .8rem 1rem; margin: 1.2rem 0; font-size: .95em; }
+  .disclaimer { border-left-color: var(--muted); background: var(--code-bg); }
+  ul { padding-left: 1.4rem; }
+  a { color: var(--accent); }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: .85em; color: var(--muted); }
+  .mono { font-family: ui-monospace, Consolas, monospace; font-size: .85em; word-break: break-all; }
+</style>
+</head>
+<body>
+
+<h1>В школах Москвы на большинстве интерактивных панелей установлен скрытый агент для аудиозаписи,
+получающий задания через API на school.mos.ru и загружающий аудиозаписи на сервера ДИТ Москвы</h1>
+
+<h2>Что такое МОС и интерактивные панели?</h2>
+
+<p>Московские школы в последние годы активно оснащались новым оборудованием: в классах
+появились ноутбуки, моноблоки и интерактивные доски. Закупками занимается Департамент
+информационных технологий города Москвы (ДИТ), а сами школы подчиняются Департаменту
+образования и науки Москвы.</p>
+
+<p>На компьютеры и интерактивные панели с 2022 года ставится
+<a href="https://os.mos.ru/">операционная система «Московской электронной школы»</a>
+(МОС) — дистрибутив Linux на пакетной базе ROSA Linux. Система включена в
+<a href="https://reestr.digital.gov.ru/reestr/3050537/">реестр отечественного программного
+обеспечения</a> (запись №&nbsp;26418 от 12.02.2025). По словам самих разработчиков,
+«поддержкой и развитием системы занимаются специалисты Департамента информационных
+технологий города Москвы», а её исходный код размещён на «Мос.Хабе»
+(<code>hub.mos.ru</code>) — публичной платформе совместной разработки ДИТ. Прежде всего
+МОС устанавливается на интерактивные панели, которыми заменены обычные доски в большинстве учебных классов.
+Новые доски поставляются предустановленной МОС.</p>
+
+<figure>
+  <img src="evidence/images/mostech-panel.jpg" alt="Интерактивная панель МосТех, установленная на стене школьного класса">
+  <figcaption>Интерактивная панель МосТех в школьном классе.
+  Фото — <a href="https://it-help-school.ru/%D0%9F%D0%B0%D0%BD%D0%B5%D0%BB%D1%8C_%D0%9C%D0%BE%D1%81%D1%82%D0%B5%D1%85">wiki «IT в школе»
+  (it-help-school.ru)</a>, лицензия CC0.</figcaption>
+</figure>
+
+<p>При этом для московских школ существует <b>особая сборка МОС</b>. Обычный дистрибутив,
+который любой может скачать с сайта, разработчики сами характеризуют как версию
+«без телеметрии без техподдержки ДИТ», а для школ публично распространяются отдельные
+образы — со встроенной телеметрией и системой техподдержки ДИТ
+(<a href="https://hub.mos.ru/mos/iso">hub.mos.ru/mos/iso</a>).
+В том числе есть специальный дистрибутив для интерактивных панелей.
+Новое оборудование уже приходит с предустановленной МОС с телеметрией,
+на старое оборудование МОС должна быть установлена по распоряжению
+ДОНМ Москвы. Также на МОС в Москве проводится ОГЭ (государственная
+итоговая аттестация в 9 классе), а начиная с 2027 года будет проводиться и ЕГЭ.
+</p>
+
+<p>Пакет телеметрии <code>uds-system-agent</code> есть на каждом компьютере в дистрибутиве
+&laquo;Для московских школ&raquo; и, как видно по истории <code>dnf</code> на досках,
+регулярно обновляется. Этот канал
+удалённого администрирования уже использовался для управления МОС на всех компьютерах в школах Москвы — например,
+на компьютерах массово меняли обои рабочего стола на рекламу московских мероприятий.
+Тогда вреда в этом, казалось, не было: поддержка настроила обои. В конце августа 2026
+года через ту же систему удалённого администрирования на доски поставили пакет, который
+делает совсем другое.</p>
+
+<h2>mesh-agent-lesson-log</h2>
+
+<p>На интерактивных панелях в классах московских школ обнаружен пакет <code>mesh-agent-lesson-log</code> —
+системный демон, который записывает звук в аудитории и отправляет записи наружу. В
+публичном репозитории МОС такого пакета нет: он распространяется установкой локального
+rpm-файла, в том числе с облачного сервиса <code>mostech-cloud.mos.ru</code>, который
+принадлежит ДИТ.</p>
+
+<p>Судя по истории обновлений на трёх проверенных досках, пакет ставится и обновляется
+массово и централизованно: на всех трёх машинах — одна и та же цепочка версий
+с одинаковыми датами, установка идёт скриптом через файлы в <code>/tmp</code>, а не вручную. Внешний вид
+истории (повторные <code>install</code> одних и тех же версий)
+характерен для развёртывания по всей сети школ через систему удалённого
+администрирования ДИТ.</p>
+
+<p>У нас есть две версии пакета&nbsp;&mdash; ранняя, 0.1.3, которая, по-видимому, не устанавливалась массово в школах, и текущая, 1.1.0.
+Версия 0.1.3 подписана ключом, связанным с разработчиками МОС. В версии 1.1.0 подписи уже нет, но по состоянию
+на 30 октября сам пакет можно скачать с сайта <code>mostech-cloud.mos.ru</code>.</p>
+
+<p>Ниже — разбор содержимого двух версий пакета, фотографии вывода команды
+<code>dnf history</code> с трёх интерактивных досок в разных школах, скриншоты штатной
+процедуры регистрации доски в МОС и результаты очного осмотра одной из досок.</p>
+
+<h2>Коротко о главном</h2>
+
+<ul>
+  <li>Пакет устанавливает демон, который <strong>включается автоматически</strong> (пресет <code>enable</code> в составе пакета) и работает от пользователя <code>mesh-agent</code> с группой <code>audio</code>.</li>
+  <li>Демон <strong>запрашивает задания у сервера</strong>: в версии 0.1.3 — каждые <strong>30 секунд</strong> по открытому HTTP на IP-адресе сервера хостинг-провайдера Selectel; в версии 1.1.0 — каждые 10 минут по HTTPS на <code>school.mos.ru/api/speech-analytics/internal/v1/agent</code>.</li>
+  <li><strong>Записывает звук из аудитории</strong> через <code>arecord</code>, кодирует в OPUS через <code>ffmpeg</code>. Версия 1.1.0 дополнительно <strong>снимает mute с микрофона</strong> на время записи.</li>
+  <li><strong>Отправляет записи</strong> на SMB-шару <code>MEDIASTG</code> — сервер загрузки стоит в школьном здании и подконтролен ДИТ, после чего <strong>удаляет их с локального диска</strong>.</li>
+  <li>Помимо звука собирает сведения об устройстве, сетевых интерфейсах и <strong>MAC-адресе шлюза</strong>.</li>
+  <li>Пакет собран в инфраструктуре ДИТ («Мос.Хаб», <code>hub.mos.ru</code>), версия 0.1.3 подписана официальным ключом подписи МОС <code>abf@os.mos.ru</code>.</li>
+  <li><strong>В версии 1.1.0 (октябрь 2026) криптографическая подпись удалена, а описание пакета изменено</strong> — с прямого «Агент для аудиозаписи урока» на нейтральное «Агент обеспечивает проведение урока». Функция записи при этом не просто сохранена, но развита.</li>
+  <li>На трёх досках в разных школах история <code>dnf</code> показывает установку и обновления пакета <strong>с августа по октябрь 2026 года</strong> локальными файлами из <code>/tmp</code>.</li>
+</ul>
+
+<h2>Материалы для проверки</h2>
+
+<table>
+  <tr><th>Файл</th><th>SHA-256</th></tr>
+  <tr>
+    <td><a href="evidence/mesh-agent-lesson-log-0.1.3-1.git84da32.2.x86_64.rpm">mesh-agent-lesson-log-0.1.3-1.git84da32.2.x86_64.rpm</a></td>
+    <td class="mono">d886675a18a5db56fcee4fdcc6535c5e91c5a0571ea7ccc0b58abb79519b0b72</td>
+  </tr>
+  <tr>
+    <td><a href="evidence/mesh-agent-lesson-log-1.1.0-2.gitea3ac2.1.x86_64.rpm">mesh-agent-lesson-log-1.1.0-2.gitea3ac2.1.x86_64.rpm</a></td>
+    <td class="mono">3ebf32f8bd899c8da7bed3ef5fc75f0b3d2135a153397735e99dcaabf9bd91ad</td>
+  </tr>
+  <tr>
+    <td><a href="evidence/RPM-GPG-KEY-MOS">RPM-GPG-KEY-MOS</a> (ключ подписи из пакета <code>mostech-repos-keys-2021.1-5</code> официального репозитория МОС)</td>
+    <td class="mono">6432d14970a71e915cf4baaff0ab272d5aa2910dbb285d3e2a0c2585275aa683</td>
+  </tr>
+  <tr>
+    <td>dnf-history-1.jpg (фото доски в школе №&nbsp;1)</td>
+    <td class="mono">288202c6f16754f910240cf834b1779b3476c2dc258fb9f904f675a03105c4a2</td>
+  </tr>
+  <tr>
+    <td>dnf-history-2.jpg (фото доски в школе №&nbsp;2)</td>
+    <td class="mono">f0f9a906a30ceb32c2025c456081f3816e42916719e10b2172a9dd6da9e72204</td>
+  </tr>
+  <tr>
+    <td>dnf-history-3.jpg (фото доски в школе №&nbsp;3)</td>
+    <td class="mono">dc1181f3aa20bada6f208f682f81df2ef24e59bb6a6546ce48ffdc8413c30ef2</td>
+  </tr>
+  <tr>
+    <td>panel-registration-1.png (скриншот регистрации панели, вкладка «Идентификация устройства»)</td>
+    <td class="mono">5c2dfdd447e2120a29c0bd8514b460f3ea1a20bee668ccf03ef559ace69fec47</td>
+  </tr>
+  <tr>
+    <td>panel-registration-2.png (скриншот регистрации панели, вкладка «Имя компьютера»)</td>
+    <td class="mono">7d04aa03c17a36920abc881e2ad617b519e20aa65089e0f6208a3555875eadc2</td>
+  </tr>
+  <tr>
+    <td>mostech-panel.jpg (фото интерактивной панели МосТех в классе, из wiki it-help-school.ru, CC0)</td>
+    <td class="mono">d08323b83a81bfae72ba0a092ac2586c264854268c19e1e83560297c96741c99</td>
+  </tr>
+</table>
+
+<p>Версия 1.1.0 доступна для скачивания с сервера ДИТ (по состоянию на 30.10.2026; адрес
+отвечает только с российских IP-адресов):</p>
+<pre><code>https://mostech-cloud.mos.ru/s/jbDEPLme3QKLSfG/download/mesh-agent-lesson-log-1.1.0-2.gitea3ac2.1.x86_64.rpm</code></pre>
+
+<p>Очевидно, что когда-нибудь эта ссылка перестанет работать, мы сохранили версию пакета 1.1.0.</p>
+
+<p>Адрес в формате <code>/s/&lt;token&gt;/download</code> — это шаринг файла в облачном
+сервисе <code>mostech-cloud.mos.ru</code>. Опубликованные здесь rpm-файлы и фотографии
+идентичны тому, что распространяется по ссылке: сверьте SHA-256.</p>
+<h2>Хронология: пакет ставили и обновляли с августа по октябрь</h2>
+
+<p>Ниже — фотографии вывода команды <code>dnf history</code> с интерактивных досок в трёх
+разных школах. Имена пользователей и точные дни скрыты на самих фотографиях.
+На всех трёх досках пакет устанавливался и обновлялся
+<b>локальными rpm-файлами из <code>/tmp</code></b> — то есть не через штатное обновление
+из репозитория, а установкой файла, который закидывается на машину удалённо.
+Установка пакета не из репозитория, а напрямую означает, что разработчики пакета
+и управляющие системой <code>uds-system-agent</code> не хотят публиковать свой пакет
+(в репозитории он был бы доступен для скачивания и изучения всеми желающими).
+Сам файл пакета после установки удаляется из каталога <code>/tmp</code>.
+</p>
+
+<figure>
+  <img src="evidence/images/dnf-history-1.jpg" alt="Фотография экрана интерактивной доски в школе с выводом команды dnf history: установка и обновления пакета mesh-agent-lesson-log с августа по октябрь 2026 года">
+  <figcaption>Школа №&nbsp;1.</figcaption>
+</figure>
+
+<figure>
+  <img src="evidence/images/dnf-history-2.jpg" alt="Фотография экрана интерактивной доски в другой школе с выводом команды dnf history, показывающей повторные установки пакета mesh-agent-lesson-log">
+  <figcaption>Школа №&nbsp;2.</figcaption>
+</figure>
+
+<figure>
+  <img src="evidence/images/dnf-history-3.jpg" alt="Фотография экрана интерактивной доски в третьей школе: приветственный экран MOSTECH «На пакетной базе ROSA» и вывод dnf history с установками пакета mesh-agent-lesson-log">
+  <figcaption>Школа №&nbsp;3.</figcaption>
+</figure>
+
+<h2>Запись фактически идёт: осмотр одной доски</h2>
+
+<p>Помимо разбора пакетов и фотографий, была проведена очная проверка одной интерактивной
+доски. В каталоге <code>/var/lib/cloudcom/agent/jobs</code> — том самом, что указан в
+конфигурации агента как <code>recording.root-dir</code>, — обнаружены каталоги заданий.
+Почти все оказались пустыми; самый старый создан <b>16 октября 2026 года</b>. В последнем
+каталоге лежал файл аудиозаписи.</p>
+
+<h2>Каждая доска привязана к точному адресу</h2>
+
+<p>Есть ещё одна деталь, касающаяся того, насколько хорошо известно расположение каждого
+источника записи. При установке МОС на интерактивной панели есть приложение регистрации устройства.
+Технические специалисты в школах должны регистрировать всё оборудование.
+Скриншоты ниже сделаны на чистой установке МОС&nbsp;12 в виртуальной машине.</p>
+
+<figure>
+  <img src="evidence/images/panel-registration-1.png" alt="Окно регистрации интерактивной панели в МОС: вкладка «Идентификация устройства» с полями ЕКИС организации, наименования образовательной организации и адреса корпуса">
+  <figcaption>Вкладка «Идентификация устройства»: тип устройства — «Интерактивная панель»,
+  поля «ЕКИС организации», «Номер или наименование образовательной организации»,
+  «Номер или название или адрес корпуса».</figcaption>
+</figure>
+
+<figure>
+  <img src="evidence/images/panel-registration-2.png" alt="Окно регистрации интерактивной панели в МОС: вкладка «Имя компьютера» с полями Школа, Корпус, Кабинет и id устройства для формирования имени компьютера">
+  <figcaption>Вкладка «Имя компьютера»: имя устройства формируется из номеров
+  <b>школы, корпуса, кабинета</b> и id устройства — «Введите номера или короткие названия
+  английскими буквами школы, корпуса, кабинета и устройства, согласно правилам именования».
+  </figcaption>
+</figure>
+
+<p>То есть каждая интерактивная панель при вводе в эксплуатацию получает привязку к
+конкретной образовательной организации, корпусу и кабинету. А работает агент
+<code>mesh-agent-lesson-log</code> именно на этих панелях и идентифицирует себя серверу
+(<code>readUDSAgentID</code>, сведения об устройстве, MAC-адрес шлюза). Выходит, для каждой
+доски в системе известно её точное местоположение — вплоть до номера кабинета: каждому
+источнику звукозаписи в школе соответствует запись в общей инвентаризационной базе
+с адресом.</p>
+
+<h2>Кто собрал пакет и как он подписан</h2>
+
+<p>Обе версии собраны в инфраструктуре ROSA/ABF (Vendor: ROSA), исходники —
+<code>https://hub.mos.ru/mos/cloudcom/mesh-agent</code>. «Мос.Хаб» — это публичная
+платформа совместной разработки ДИТ: её лендинг принадлежит Департаменту информационных
+технологий, проект <code>mesh-agent</code> по адресу размещения относится к организации
+<code>mos</code> (тот же <code>mos</code>, что и в ISO-образах МОС). Сборочные хосты
+(внутренние имена ABF): <code>mos-hz6phq</code> (0.1.3), <code>mos-nd2jsf</code> (1.1.0).</p>
+
+<h3>0.1.3 — подписана официальным ключом МОС</h3>
+<pre><code>Version     : 0.1.3
+Release     : 1.git84da32.2        DistTag: rosa13
+Build Date  : Сб 18 июл 2026 17:56:31
+Build Host  : mos-hz6phq
+License     : Proprietary
+Signature   : EdDSA/SHA256, Сб 18 июл 2026 17:59:03, Key ID 507eea45722f23cd
+Summary     : Агент для аудиозаписи урока
+Description : Автономный агент записи для MOS Panel.
+              Агент записывает аудио из аудитории, сообщает о статусе
+              и загружает полученный аудиофайл.</code></pre>
+
+<p><code>rpm -K</code>: <code>digests signatures ОК</code>. Key ID <code>507eea45722f23cd</code> —
+последние 8 байт отпечатка ключа <code>F307F3F0F3EB3B9CA9EC4EF2507EEA45722F23CD</code>
+(<code>uid: abf@os.mos.ru</code>).</p>
+
+<p>Этот ключ <b>официально распространяется самой МОС</b>: пакет
+<code>mostech-repos-keys-2021.1-5-rosa2021.1.noarch.rpm</code> из официального репозитория
+<code>https://os.mos.ru/repo/mos2021.1/x86_64/main/release/</code> содержит единственный
+ключевой файл <code>/etc/pki/rpm-gpg/RPM-GPG-KEY-MOS</code> с отпечатком
+<code>F307F3F0F3EB3B9CA9EC4EF2507EEA45722F23CD</code> (<code>uid: abf.mos.ru &lt;abf@os.mos.ru&gt;</code>).
+Иными словами, каждая установка МОС доверяет этому ключу по умолчанию.</p>
+
+<p>Проверка подписи выполнена независимо — в чистой rpm-базе, содержащей только
+импортированный <code>RPM-GPG-KEY-MOS</code> и никаких других ключей:</p>
+<pre><code>mkdir /tmp/clean-rpmdb
+rpm --dbpath /tmp/clean-rpmdb --import RPM-GPG-KEY-MOS
+rpm --dbpath /tmp/clean-rpmdb -K mesh-agent-lesson-log-0.1.3-1.git84da32.2.x86_64.rpm
+# digests signatures ОК
+rpm --dbpath /tmp/clean-rpmdb -K mesh-agent-lesson-log-1.1.0-2.gitea3ac2.1.x86_64.rpm
+# digests ОК  (подписи нет)</code></pre>
+
+<h3>1.1.0 — подписи нет, описание заменено</h3>
+<pre><code>Version     : 1.1.0
+Release     : 2.gitea3ac2.1       DistTag: rosa2021.1
+Build Date  : Пт 09 окт 2026 13:35:49
+Build Host  : mos-nd2jsf
+License     : Proprietary
+Signature   : (none)
+Summary     : Агент обеспечивает проведение урока
+Description : Системный агент для МОС (Операционная система
+              «Московской электронной школы»).
+              Агент обеспечивает проведение урока.</code></pre>
+
+<p><code>rpm -K</code>: <code>digests ОК</code> — криптографической подписи нет. Описание
+пакета — то, что видит администратор при установке, — заменено: из прямого «Агент для
+аудиозаписи урока / записывает аудио из аудитории» в нейтральное «Агент обеспечивает
+проведение урока». Пока функция записи при этом не просто сохранена, но расширена.
+Как же именно этот агент обеспечивает проведение урока — не уточняется.</p>
+
+<h3>Что изменилось между версиями пакета 0.1.3 и 1.1.0</h3>
+
+<table>
+  <tr><th></th><th>0.1.3 (июль 2026)</th><th>1.1.0 (октябрь 2026)</th></tr>
+  <tr>
+    <td><b>Криптографическая подпись</b></td>
+    <td>есть — EdDSA, ключ <code>abf@os.mos.ru</code></td>
+    <td><b>удалена</b> (<code>Signature: (none)</code>)</td>
+  </tr>
+  <tr>
+    <td><b>Summary</b></td>
+    <td>«Агент для аудиозаписи урока»</td>
+    <td>«Агент обеспечивает проведение урока»</td>
+  </tr>
+  <tr>
+    <td><b>Description</b></td>
+    <td>«Агент записывает аудио из аудитории, сообщает о статусе и загружает полученный аудиофайл»</td>
+    <td>«Агент обеспечивает проведение урока» — о записи упоминаний нет</td>
+  </tr>
+  <tr>
+    <td><b>Запись звука</b></td>
+    <td>есть</td>
+    <td>есть, <b>добавлено снятие mute</b> (<code>temporaryUnmute</code>)</td>
+  </tr>
+  <tr>
+    <td><b>Уведомление на рабочий стол</b></td>
+    <td>есть (скрипт <code>kde-notify</code>)</td>
+    <td>удалено</td>
+  </tr>
+  <tr>
+    <td><b>Сервер заданий</b></td>
+    <td>HTTP, IP Selectel, опрос каждые 30 с</td>
+    <td>HTTPS, <code>school.mos.ru/api/speech-analytics</code>, опрос каждые 10 мин</td>
+  </tr>
+</table>
+
+<h2>Что делает пакет</h2>
+
+<h3>Автозапуск</h3>
+<p>Файл <code>/usr/lib/systemd/system-preset/90-mesh-agent-lesson-log.preset</code> содержит
+одну строку: <code>enable mesh-agent-lesson-log.service</code>. Демон включается сам при
+установке, без действий администратора. Пользователь <code>mesh-agent</code> создаётся
+через sysusers с шеллом <code>/sbin/nologin</code>; группа <code>audio</code> даёт доступ
+к записывающим устройствам.</p>
+
+<pre><code>[Unit]
+Description=CloudCom lesson log mesh agent   # в 1.1.0: CloudCom lesson delivery agent
+After=network-online.target sound.target
+
+[Service]
+User=mesh-agent
+Group=mesh-agent
+SupplementaryGroups=audio
+WorkingDirectory=/var/lib/cloudcom/agent
+ExecStart=/usr/bin/mesh-agent-lesson-log
+Restart=always
+RestartSec=10
+StateDirectory=cloudcom/agent
+NoNewPrivileges=true</code></pre>
+
+<h3>Сервер заданий</h3>
+
+<p><b>Версия 0.1.3</b> — опрос каждые 30 секунд по открытому HTTP:</p>
+<pre><code>"backend": {
+  "base-url": "http://82.148.29.56:18080/cloudcom/listener-server/api/v1/agent",
+  "sync-interval-seconds": 30
+}</code></pre>
+<p>IP-адрес <code>82.148.29.56</code> по данным whois принадлежит сети
+<code>SELECTEL-NET</code> (Selectel, Санкт-Петербург).</p>
+
+<p><b>Версия 1.1.0</b> — HTTPS на <code>school.mos.ru</code>, в URL виден сегмент
+<code>speech-analytics</code> («речевая аналитика»), интервал увеличен до 600 секунд:</p>
+<pre><code>"backend": {
+  "base-url": "https://school.mos.ru/api/speech-analytics/internal/v1/agent",
+  "sync-interval-seconds": 600
+}</code></pre>
+
+<p>README версии 1.1.0 прямо называет production endpoint и встроенный API-ключ:</p>
+<pre><code>https://school.mos.ru/api/speech-analytics/internal/v1/agent/sync
+
+Production API key 80f594fd-72d5-4a3a-8945-89a475d941df встроен в бинарный файл.</code></pre>
+
+<p>Ключ нашли в самом бинарнике (строка <code>80f594fd-72d5-4a3a-8945-89a475d941df</code>,
+заголовок запроса <code>x-api-key</code>).</p>
+
+<h3>Что писал разработчик в README версии 0.1.3</h3>
+<blockquote style="border-left:3px solid var(--border);margin-left:0;padding-left:1rem;color:var(--muted)">
+Агент звукозаписи для МОС (Операционная система «Московской электронной школы»).<br><br>
+Работает в фоне и записывает звук с входящих устройств по расписанию. Получает список
+сетевых устройств и их MAC адреса.<br><br>
+Написан на Go
+</blockquote>
+
+<h3>Запись звука</h3>
+<p>Бинарники написаны на Go (0.1.3 — Go 1.25.11, 1.1.0 — Go 1.26.5), stripped, но таблицы
+символов сохранили имена функций, из которых читается поведение:</p>
+<ul>
+  <li>запись через <code>arecord</code> (WAV), кодирование в OPUS через <code>ffmpeg</code> — в коде остались строки «Файл успешно сконвертирован через ffmpeg!» и «Ошибка вызова ffmpeg: %v»;</li>
+  <li>поддержка микрофонов (<code>findOktavaARecordDevice</code>), USB-аудио и HDA-кодеков (<code>snd_hda_intel</code>,
+  <code>snd_usb_audio</code>, <code>selectTargetMicrophone</code>);</li>
+  <li><b>только в 1.1.0: <code>temporaryUnmute</code>, <code>readMuteState</code>,
+  <code>probeWithTemporaryUnmute</code></b> — демон временно снимает mute с микрофона через ALSA-переключатели на время записи: если микрофон заглушен в системе, запись всё равно пойдёт;</li>
+  <li>оценка сигнала: <code>wavSignalLevel</code>, <code>isUsableWAV</code>.</li>
+</ul>
+
+<h3>Отправка и удаление записей</h3>
+<ul>
+  <li>записи уходят на SMB-шару <code>MEDIASTG</code> (порт 445, шара <code>in</code>) через SMB2-клиент и/или загружаются по HTTP (<code>multipart/form-data</code>, поля <code>file</code> и <code>metadata</code>);</li>
+  <li>сервер <code>MEDIASTG</code> — локальный сервер загрузки, расположенный в здании самой школы; им управляет ДИТ. То есть аудиозаписи сначала собираются внутри школьного здания, не покидая его по внешним каналам.
+  Дальнейшая судьба записей неизвестна;</li>
+  <li>статусы заданий: <code>SCHEDULED</code>, <code>RECORDING</code>, <code>UPLOADING</code>, <code>UPLOAD_FAILURE</code>;</li>
+  <li>удаление после отправки: <code>keep-success-hours: 24</code>, строки логов <code>cleanup: job=%s deleted</code>; при старте — «recording files found on startup; local recording was discarded», то есть остатки локальных записей уничтожаются;</li>
+  <li>задания приходят с сервера (<code>listener-server</code>); сервер может досрочно остановить запись: «recording cancelled because job was removed by server».</li>
+</ul>
+
+<h3>Сбор сведений об устройстве</h3>
+<p>Функции <code>collectDeviceInfo</code>, <code>collectNetworkInterfaces</code> (включая
+<code>GatewayMAC</code> — MAC-адрес шлюза), <code>collectOSInfo</code>, <code>readUDSAgentID</code>,
+<code>sha256File</code> для каждой записи. README 0.1.3 сам сообщает: «Получает список
+сетевых устройств и их MAC адреса».</p>
+
+<h3>Уведомления (только 0.1.3)</h3>
+<p>В версии 0.1.3 есть скрипт <code>kde-notify</code> и функции <code>notifyRecordingStart</code>,
+<code>sendDesktopNotification</code> — демон уведомлял пользователя на рабочий стол KDE о
+начале записи. В версии 1.1.0 скрипт из пакета убрали.</p>
+
+<h2>Информирование о записи</h2>
+
+<p>Никакого предупреждения о произведении аудиозаписи учителям и учащимся не производилось.
+Но, по-видимому, администрация школ неформально предупреждена об этом. В частности,
+один из учителей спрашивает: &laquo;Коллега из другой школы интересуется, правда ли, что новые доски мостех пишут что происходит на уроке?
+И второе: нас вчера директор пугала, что все доски электронные настроены на запись звука или воспроизведение в реальном времени. Неужели так?&raquo;</p>
+
+<h2>Как проверить самостоятельно</h2>
+
+<p>Разбор полностью воспроизводим на чистой Linux-системе:</p>
+<pre><code>sha256sum *.rpm
+rpm -qpi mesh-agent-lesson-log-&lt;версия&gt;.x86_64.rpm     # метаданные, подпись
+rpm -K  mesh-agent-lesson-log-&lt;версия&gt;.x86_64.rpm      # проверка подписи
+rpm -qpl mesh-agent-lesson-log-&lt;версия&gt;.x86_64.rpm     # состав
+
+# независимая проверка подписи в чистой базе ключей:
+mkdir /tmp/clean-rpmdb
+rpm --dbpath /tmp/clean-rpmdb --import evidence/RPM-GPG-KEY-MOS
+rpm --dbpath /tmp/clean-rpmdb -K mesh-agent-lesson-log-&lt;версия&gt;.x86_64.rpm
+
+mkdir ex &amp;&amp; cd ex
+rpm2cpio ../mesh-agent-lesson-log-&lt;версия&gt;.x86_64.rpm | cpio -idmv
+
+cat etc/mesh-agent/config.json                          # сервер заданий
+cat usr/share/doc/mesh-agent-lesson-log/README.md       # документация
+cat usr/lib/systemd/system/mesh-agent-lesson-log.service
+cat usr/lib/systemd/system-preset/90-mesh-agent-lesson-log.preset
+
+strings -n 6 usr/bin/mesh-agent-lesson-log | grep -E '^main\.[a-z]'   # символы
+strings -a usr/bin/mesh-agent-lesson-log | grep -oE 'go1\.[0-9.]+'    # версия Go
+whois 82.148.29.56                                     # владелец IP</code></pre>
+
+<p>Исходные текстовые файлы пакета опубликованы как есть:
+<a href="evidence/config-0.1.3.json">config.json 0.1.3</a> ·
+<a href="evidence/config-1.1.0.json">config.json 1.1.0</a> ·
+<a href="evidence/README-0.1.3.md">README 0.1.3</a> ·
+<a href="evidence/README-1.1.0.md">README 1.1.0</a> ·
+<a href="evidence/service-0.1.3.service">юнит 0.1.3</a> ·
+<a href="evidence/service-1.1.0.service">юнит 1.1.0</a> ·
+<a href="evidence/kde-notify-0.1.3.sh">kde-notify 0.1.3</a>.</p>
+
+<footer>
+<p>Автор публикации работает в московской школе. Технический анализ произведён
+с использованием нейросетей, поэтому может содержать неточности.</p>
+</footer>
+
+</body>
+</html>

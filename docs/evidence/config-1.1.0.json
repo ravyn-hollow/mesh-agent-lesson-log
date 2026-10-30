@@ -1,0 +1,33 @@
+{
+  "backend": {
+    "base-url": "https://school.mos.ru/api/speech-analytics/internal/v1/agent",
+    "sync-interval-seconds": 600,
+    "timeout-seconds": 30
+  },
+  "samba": {
+    "ip-address": "MEDIASTG.",
+    "port": 445,
+    "share-name": "in"
+  },
+  "recording": {
+    "root-dir": "/var/lib/cloudcom/agent/jobs",
+    "temp-dir": "/var/lib/cloudcom/agent/tmp",
+    "audio-format": "OPUS",
+    "channels": 1,
+    "sample-rate": 44100,
+    "sample-format": 2,
+    "min-free-bytes": 536870912,
+    "grace-seconds": 5,
+    "keep-success-hours": 24
+  },
+  "upload": {
+    "target": "NETWORK_SHARE",
+    "retry": {
+      "initial-delay-seconds": 30,
+      "max-delay-seconds": 900
+    }
+  },
+  "logging": {
+    "level": "INFO"
+  }
+}
